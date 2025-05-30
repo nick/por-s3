@@ -14,7 +14,7 @@ required_vars=(
 # Optional environment variables (with defaults)
 ECR_REPOSITORY=${ECR_REPOSITORY:-"proof-of-reserves-processor"}
 AMI_ID=${AMI_ID:-"ami-022acf3cdef3c76c1"}  # Amazon Linux 2023 ARM64
-INSTANCE_TYPE=${INSTANCE_TYPE:-"c8g.8xlarge"}
+INSTANCE_TYPE=${INSTANCE_TYPE:-"c8g.12xlarge"}
 IAM_INSTANCE_PROFILE=${IAM_INSTANCE_PROFILE:-"ecsInstanceRole"}
 LAMBDA_FUNCTION_NAME=${LAMBDA_FUNCTION_NAME:-"proof-of-reserves-launcher"}
 LAMBDA_ROLE_NAME=${LAMBDA_ROLE_NAME:-"ProofOfReservesLambdaRole"}

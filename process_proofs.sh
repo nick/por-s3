@@ -50,6 +50,17 @@ fi
 
 echo "Proof generation completed successfully"
 
+# Create proofs.zip containing the main proof files
+echo "Creating proofs.zip..."
+zip proofs.zip merkle_tree.json final_proof.json
+
+if [ ! -f "proofs.zip" ]; then
+    echo "Error: Failed to create proofs.zip"
+    exit 1
+fi
+
+echo "Successfully created proofs.zip"
+
 # Check if we should upload user proofs
 UPLOAD_USER_PROOFS=false
 if [ "$USER_PROOFS_ALWAYS" = "true" ]; then

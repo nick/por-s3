@@ -10,14 +10,14 @@ RUN rustup default nightly
 
 # Clone and build the project
 WORKDIR /build
-RUN git clone --branch nick/batch https://github.com/otter-sec/por_v2.git .
+RUN git clone https://github.com/otter-sec/por_v2.git .
 RUN cargo build --release --bin plonky2_por
 
 # Runtime stage
 FROM alpine:3.20
 
-# Install required packages including bash
-RUN apk add --no-cache ca-certificates aws-cli bash
+# Install required packages including bash and zip
+RUN apk add --no-cache ca-certificates aws-cli bash zip
 
 # Copy the built binary
 COPY --from=builder /build/target/release/plonky2_por /usr/local/bin/
