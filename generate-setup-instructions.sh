@@ -117,7 +117,7 @@ aws iam put-role-policy --role-name $EC2_ROLE_NAME --policy-name ProofOfReserves
   "Statement": [
     {
       "Effect": "Allow",
-      "Action": ["s3:ListBucket", "s3:GetObject", "s3:PutObject"],
+      "Action": ["s3:ListBucket", "s3:GetObject", "s3:PutObject", "s3:PutObjectAcl"],
       "Resource": ["arn:aws:s3:::$S3_BUCKET", "arn:aws:s3:::$S3_BUCKET/*"]
     },
     {

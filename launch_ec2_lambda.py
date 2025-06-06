@@ -50,8 +50,12 @@ $(aws ecr get-login --no-include-email --region $REGION)
 # Pull the image
 docker pull $IMAGE
 
-# Run the container, passing S3 info as env vars
+# Create workspace directory on host for volume mount
+mkdir -p /tmp/workspace
+
+# Run the container with volume mount for optimized I/O, passing S3 info as env vars
 docker run --rm \\
+  -v /tmp/workspace:/workspace \\
   -e S3_BUCKET=$S3_BUCKET \\
   -e PROOF_DIR=$PROOF_DIR \\
   -e AWS_REGION=$REGION \\

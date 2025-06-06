@@ -81,7 +81,12 @@ fi
 
 # Upload all files back to S3
 echo "Uploading results back to S3..."
-aws s3 sync /workspace "s3://$S3_BUCKET/$PROOF_DIR/" --region $AWS_REGION --exclude "private_ledger.json"
+aws s3 sync /workspace "s3://$S3_BUCKET/$PROOF_DIR/" --region $AWS_REGION --exclude "private_ledger.json" --exclude "proofs.zip"
+
+# Upload proofs.zip with public read access
+echo "Uploading proofs.zip with public access..."
+aws s3 cp /workspace/proofs.zip "s3://$S3_BUCKET/$PROOF_DIR/proofs.zip" --region $AWS_REGION --acl public-read
 
 echo "Proof processing completed successfully!"
 echo "Results uploaded to: s3://$S3_BUCKET/$PROOF_DIR/"
+echo "Public download URL: https://$S3_BUCKET.s3.$AWS_REGION.amazonaws.com/$PROOF_DIR/proofs.zip"

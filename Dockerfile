@@ -29,4 +29,7 @@ RUN chmod +x /usr/local/bin/process_proofs.sh
 
 WORKDIR /workspace
 
+# Declare workspace as a volume for optimized I/O
+VOLUME ["/workspace"]
+
 ENTRYPOINT ["/usr/local/bin/process_proofs.sh"]
