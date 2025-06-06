@@ -53,14 +53,18 @@ su - ec2-user -c "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 su - ec2-user -c "
     source ~/.cargo/env
     cd ~
-    git clone https://github.com/otter-sec/por_v2.git
+    git clone https://github.com/nick/por_v2.git
     cd por_v2
+    git checkout nick/perf
     cargo build --release --bin plonky2_por
 "
 
-# Create working directory
+# Create 16GB ramdisk for working directory
+echo "Setting up 16GB ramdisk for /workspace..."
 mkdir -p /workspace
+mount -t tmpfs -o size=16G tmpfs /workspace
 chown ec2-user:ec2-user /workspace
+echo "16GB ramdisk mounted at /workspace"
 
 # Download private_ledger.json from S3
 echo "Downloading private_ledger.json from S3..."
