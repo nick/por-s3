@@ -12,7 +12,6 @@ required_vars=(
 )
 
 # Optional environment variables (with defaults)
-ECR_REPOSITORY=${ECR_REPOSITORY:-"proof-of-reserves-processor"}
 AMI_ID=${AMI_ID:-"ami-022acf3cdef3c76c1"}  # Amazon Linux 2023 ARM64
 INSTANCE_TYPE=${INSTANCE_TYPE:-"c8g.12xlarge"}
 IAM_INSTANCE_PROFILE=${IAM_INSTANCE_PROFILE:-"ecsInstanceRole"}
@@ -41,7 +40,6 @@ if [ ${#missing_vars[@]} -ne 0 ]; then
     echo "  export S3_BUCKET=\"my-bucket\""
     echo ""
     echo "Optional variables (defaults shown):"
-    echo "  export ECR_REPOSITORY=\"$ECR_REPOSITORY\""
     echo "  export AMI_ID=\"$AMI_ID\""
     echo "  export INSTANCE_TYPE=\"$INSTANCE_TYPE\""
     echo "  export IAM_INSTANCE_PROFILE=\"$IAM_INSTANCE_PROFILE\""
@@ -67,34 +65,10 @@ Configuration:
   AWS Account ID: $AWS_ACCOUNT_ID
   AWS Region: $AWS_REGION
   S3 Bucket: $S3_BUCKET
-  ECR Repository: $ECR_REPOSITORY
   Instance Type: $INSTANCE_TYPE
 
 ======================================================================
-1. BUILD AND PUSH DOCKER CONTAINER
-======================================================================
-
-# Create ECR repository if it doesn't exist
-aws ecr describe-repositories --repository-names $ECR_REPOSITORY --region $AWS_REGION 2>/dev/null || \\
-aws ecr create-repository --repository-name $ECR_REPOSITORY --region $AWS_REGION
-
-# Build the Docker image
-docker build --platform linux/arm64 -t $ECR_REPOSITORY .
-
-# Tag for ECR
-docker tag $ECR_REPOSITORY:latest $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY:latest
-
-# Authenticate Docker to ECR
-aws ecr get-login-password --region $AWS_REGION | docker login --username AWS --password-stdin $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com
-
-# Push the image
-docker push $AWS_ACCOUNT_ID.dkr.ecr.$AWS_REGION.amazonaws.com/$ECR_REPOSITORY:latest
-
-# Verify upload
-aws ecr describe-images --repository-name $ECR_REPOSITORY --region $AWS_REGION
-
-======================================================================
-2. CREATE IAM ROLES AND POLICIES
+1. CREATE IAM ROLES AND POLICIES
 ======================================================================
 
 # Create EC2 IAM Role
@@ -179,7 +153,7 @@ aws iam put-role-policy --role-name $LAMBDA_ROLE_NAME --policy-name LambdaEC2Pol
 }'
 
 ======================================================================
-3. CREATE LAMBDA FUNCTION
+2. CREATE LAMBDA FUNCTION
 ======================================================================
 
 # Package the Lambda function
@@ -193,10 +167,10 @@ aws lambda create-function \\
   --handler launch_ec2_lambda.lambda_handler \\
   --zip-file fileb://lambda-function.zip \\
   --timeout 60 \\
-  --environment Variables="{AMI_ID=$AMI_ID,INSTANCE_TYPE=$INSTANCE_TYPE,IAM_INSTANCE_PROFILE=$IAM_INSTANCE_PROFILE,S3_BUCKET=$S3_BUCKET,AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID,TARGET_REGION=$AWS_REGION,ECR_REPOSITORY=$ECR_REPOSITORY,EC2_KEY_NAME=$EC2_KEY_NAME}"
+  --environment Variables="{AMI_ID=$AMI_ID,INSTANCE_TYPE=$INSTANCE_TYPE,IAM_INSTANCE_PROFILE=$IAM_INSTANCE_PROFILE,S3_BUCKET=$S3_BUCKET,AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID,TARGET_REGION=$AWS_REGION,EC2_KEY_NAME=$EC2_KEY_NAME}"
 
 ======================================================================
-4. CONFIGURE S3 EVENT TRIGGER
+3. CONFIGURE S3 EVENT TRIGGER
 ======================================================================
 
 # Add S3 trigger permission to Lambda function
@@ -231,7 +205,7 @@ aws s3api put-bucket-notification-configuration \\
   }'
 
 ======================================================================
-5. TEST THE SETUP
+4. TEST THE SETUP
 ======================================================================
 
 # Upload a test file to trigger the system
@@ -241,7 +215,7 @@ aws s3 cp /path/to/your/private_ledger.json s3://$S3_BUCKET/test/private_ledger.
 aws logs tail /aws/lambda/$LAMBDA_FUNCTION_NAME --follow
 
 # Check for output files
-aws s3 ls s3://$S3_BUCKET/latest/
+aws s3 ls s3://$S3_BUCKET/test/
 
 ======================================================================
 SETUP COMPLETE!
@@ -250,10 +224,19 @@ SETUP COMPLETE!
 The system will now automatically process any private_ledger.json files
 uploaded to s3://$S3_BUCKET/
 
+The EC2 instances will:
+1. Install Rust nightly toolchain
+2. Clone and build plonky2_por from source
+3. Download the private_ledger.json from S3
+4. Generate proofs using the bare metal performance
+5. Upload results back to S3
+6. Terminate themselves
+
 Monitor the system:
 - Lambda logs: /aws/lambda/$LAMBDA_FUNCTION_NAME
 - EC2 instances in AWS console
-- Output files in s3://$S3_BUCKET/latest/
+- Instance logs: SSH to instance and check /var/log/user-data.log
+- Output files in s3://$S3_BUCKET/[proof-directory]/
 
 ======================================================================
 UPDATING THE LAMBDA FUNCTION
@@ -272,7 +255,7 @@ aws lambda update-function-code \\
 # Update environment variables (if needed)
 aws lambda update-function-configuration \\
   --function-name $LAMBDA_FUNCTION_NAME \\
-  --environment Variables="{AMI_ID=$AMI_ID,INSTANCE_TYPE=$INSTANCE_TYPE,IAM_INSTANCE_PROFILE=$IAM_INSTANCE_PROFILE,S3_BUCKET=$S3_BUCKET,AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID,TARGET_REGION=$AWS_REGION,ECR_REPOSITORY=$ECR_REPOSITORY,EC2_KEY_NAME=$EC2_KEY_NAME}"
+  --environment Variables="{AMI_ID=$AMI_ID,INSTANCE_TYPE=$INSTANCE_TYPE,IAM_INSTANCE_PROFILE=$IAM_INSTANCE_PROFILE,S3_BUCKET=$S3_BUCKET,AWS_ACCOUNT_ID=$AWS_ACCOUNT_ID,TARGET_REGION=$AWS_REGION,EC2_KEY_NAME=$EC2_KEY_NAME}"
 
 # View the updated function
 aws lambda get-function --function-name $LAMBDA_FUNCTION_NAME
