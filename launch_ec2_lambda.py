@@ -53,9 +53,8 @@ su - ec2-user -c "curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh
 su - ec2-user -c "
     source ~/.cargo/env
     cd ~
-    git clone https://github.com/nick/por_v2.git
+    git clone https://github.com/otter-sec/por_v2
     cd por_v2
-    git checkout nick/perf
     cargo build --release --bin plonky2_por
 "
 
